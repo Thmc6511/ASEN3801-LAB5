@@ -322,3 +322,5 @@ function PlotAircraftSim_Lab5(time, X, U, fig, col)
     title('3D Aircraft Path (Fixed-Wing)');
 end
 
+x0 = [0,0,-1800 %m
+    ];
