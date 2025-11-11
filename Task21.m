@@ -1,0 +1,323 @@
+%% Lab 5 – Task 2.1 Master 
+
+clear; 
+clc; 
+close all;
+
+% Parameters 
+ap = load_ttwistor_or_fallback();
+
+% Initial state
+x0 = zeros(12,1);
+x0(7) = 21.0;% u (m/s)
+x0(3) = 1609.34;% altitude (m), positive up
+
+% Constant controls 
+u_const = [0; 0; 0; 0.50];% surfaces in rad, throttle in [0–1]
+wind_i = [0; 0; 0];% inertial wind (m/s), still air
+
+% Integrate dynamics 
+tspan = [0 20];
+odefun = @(t,x) AircraftEOM_local(t, x, u_const, wind_i, ap);
+opts = odeset('RelTol',1e-6, 'AbsTol',1e-8);
+[t, x] = ode45(odefun, tspan, x0, opts);
+
+% Plot 
+figs = 1:6;
+Uplot = repmat(u_const, 1, numel(t));
+PlotAircraftSim_Lab5(t, x.', Uplot, figs, 'b-');
+
+%% Local functions 
+
+function ap = load_ttwistor_or_fallback()
+    % Try to load user's ttwistor (as function or script). If it fails,
+    % construct the struct from the values you pasted.
+
+    ok = false; ap = struct();
+    try
+        out = ttwistor();                           % if it's a function
+        if isstruct(out), ap = out; ok = true; end
+    catch
+        try
+            clear aircraft_parameters
+            ttwistor;                               % if it's a script
+            ap = aircraft_parameters;
+            ok = true;
+        catch
+            ok = false;
+        end
+    end
+
+    if ~ok
+        % values from ttwistor 
+        ap.g   = 9.81;
+        ap.S   = 0.6282;
+        ap.b   = 3.067;
+        ap.c   = 0.208;
+        ap.m   = 5.74;
+        % Inertias (converted in your file)
+        SLUGFT2_TO_KGM2 = 14.5939/(3.2804*3.2804);
+        ap.Ix = SLUGFT2_TO_KGM2*4106/12^2/32.2;
+        ap.Iy = SLUGFT2_TO_KGM2*3186/12^2/32.2;
+        ap.Iz = SLUGFT2_TO_KGM2*7089/12^2/32.2;
+        ap.Ixz = SLUGFT2_TO_KGM2*323.5/12^2/32.2;
+
+        % Drag polar pieces
+        ap.CDmin = 0.0240;
+        ap.CLmin = 0.2052;
+        ap.K = 0.0549;
+        ap.AR = ap.b*ap.b/ap.S;
+        ap.e = 1/(ap.K*ap.AR*pi);
+        ap.CD0 = ap.CDmin + ap.K*ap.CLmin*ap.CLmin;% CD at CL=0
+        ap.K1 = -2*ap.K*ap.CLmin;% linear term (not used here)
+        ap.CDpa = ap.CD0;
+
+        % Engine/prop
+        ap.Sprop = 0.0707;
+        ap.Cprop = 1;
+        ap.kmotor = 30;
+
+        % Zeros/trim offsets
+        ap.CL0 = 0.2219;
+        ap.Cm0 = 0.0519;
+        ap.CY0 = 0;
+        ap.Cl0 = 0;
+        ap.Cn0 = 0;
+
+        % Longitudinal derivatives
+        ap.CLalpha = 6.196683;
+        ap.Cmalpha = -1.634010;
+        ap.CLq = 10.137584;
+        ap.Cmq = -24.376066;
+        ap.CLalphadot = 0;
+        ap.Cmalphadot = 0;
+
+        % Lateral-directional derivatives
+        ap.CYbeta = -0.367231;
+        ap.Clbeta = -0.080738;
+        ap.Cnbeta = 0.080613;
+        ap.CYp = -0.064992;
+        ap.Clp = -0.686618;
+        ap.Cnp = -0.039384;
+        ap.Clr = 0.119718;
+        ap.Cnr = -0.052324;
+        ap.CYr = 0.213412;
+
+        % Control derivatives (set 0 if not provided)
+        ap.CLde = 0; ap.CDde = 0; ap.Cmde = 0;
+        ap.CYda = 0; ap.CYdr = 0;
+        ap.Clda = 0; ap.Cldr = 0;
+        ap.Cnda = 0; ap.Cndr = 0;
+    end
+
+    % Map mass and build inertia matrix
+    ap.mass = ap.m;
+    ap.I = [ ap.Ix, -ap.Ixz, 0;
+            -ap.Ixz, ap.Iy,  0;
+                 0,      0,  ap.Iz ];
+
+    % Atmosphere fallback
+    if ~isfield(ap,'rho0'), ap.rho0 = 1.225; 
+    end
+end
+
+function xdot = AircraftEOM_local(~, x, u_const, wind_inertial, ap)
+    % State x = [xE yE zE  phi theta psi  u v w  p q r]^T
+
+    % Unpack
+    phi=x(4); theta=x(5); psi=x(6);
+    u=x(7); v=x(8); w=x(9);
+    p=x(10); q=x(11); r=x(12);
+    vb = [u;v;w]; omega = [p;q;r];
+
+    % Atmosphere density from altitude (positive up)
+    rho = local_density(x(3), ap);
+
+    % Aero forces & moments in body
+    [F_b, M_b] = AeroForcesAndMoments_local(x, u_const, wind_inertial, rho, ap);
+
+    % Gravity in body
+    g_b = [-ap.g*sin(theta);
+             ap.g*sin(phi)*cos(theta);
+             ap.g*cos(phi)*cos(theta)];
+
+    % Translational dynamics
+    vdot = (1/ap.mass)*F_b + g_b - cross(omega, vb);
+
+    % Rotational dynamics
+    I = ap.I;
+    omegadot = I \ (M_b - cross(omega, I*omega));
+
+    % Kinematics
+    R_bi = Rz(psi)*Ry(theta)*Rx(phi);
+    posdot = R_bi * vb;
+
+    % Euler rates
+    E = [1,  sin(phi)*tan(theta),  cos(phi)*tan(theta);
+         0,  cos(phi),            -sin(phi);
+         0,  sin(phi)/cos(theta),  cos(phi)/cos(theta)];
+    euldot = E * omega;
+
+    xdot = [posdot; euldot; vdot; omegadot];
+end
+
+function [aero_forces, aero_moments] = AeroForcesAndMoments_local( ...
+    aircraft_state, aircraft_surfaces, wind_inertial, density, ap)
+    % Local replica of your provided AeroForcesAndMoments.m
+    % Computes forces/moments in body frame using the same model.
+
+    % Euler -> rotation
+    phi = aircraft_state(4); theta = aircraft_state(5); psi = aircraft_state(6);
+    R_bi = Rz(psi)*Ry(theta)*Rx(phi); % body->inertial
+    R_ib = R_bi.'; % inertial->body
+
+    % Air-relative velocity in body
+    v_body = aircraft_state(7:9);
+    wind_body = R_ib * wind_inertial;
+    v_rel_b = v_body - wind_body;
+
+    % Wind angles
+    [V, beta, alpha] = wind_angles_from_body_velocity(v_rel_b);
+
+    % Dynamics/angles
+    p = aircraft_state(10); 
+    q = aircraft_state(11); 
+    r = aircraft_state(12);
+    de = aircraft_surfaces(1); 
+    da = aircraft_surfaces(2);
+    dr = aircraft_surfaces(3); 
+    dt = aircraft_surfaces(4);
+
+    % Dynamic pressure
+    Q = 0.5 * density * V*V;
+
+    % Lift/drag/sideforce coefficients
+    CL = ap.CL0 + ap.CLalpha*alpha + ap.CLq*q*ap.c/(2*V) + getfield_safe(ap,'CLde',0)*de;
+    CD = ap.CDpa + ap.K*CL*CL;  % parabolic polar: CD = CDpa + K CL^2
+
+    % Transform to body-axis CX, CZ from CL, CD
+    sa = sin(alpha); ca = cos(alpha);
+    CX = -CD*ca + CL*sa;
+    CZ = -CD*sa - CL*ca;
+
+    CY = ap.CY0 + ap.CYbeta*beta ...
+        + ap.CYp*p*ap.b/(2*V) + ap.CYr*r*ap.b/(2*V) ...
+        + getfield_safe(ap,'CYda',0)*da + getfield_safe(ap,'CYdr',0)*dr;
+
+    % Thrust (body x-axis)
+    Thrust = density*ap.Sprop*ap.Cprop*(V + dt*(ap.kmotor - V)) * dt*(ap.kmotor - V);
+
+    % Forces (body)
+    X = Q*ap.S*CX + Thrust;
+    Y = Q*ap.S*CY;
+    Z = Q*ap.S*CZ;
+    aero_forces = [X; Y; Z];
+
+    % Moments (body)
+    Cl = ap.b*( getfield_safe(ap,'Cl0',0) + ap.Clbeta*beta ...
+        + ap.Clp*p*ap.b/(2*V) + ap.Clr*r*ap.b/(2*V) ...
+        + getfield_safe(ap,'Clda',0)*da + getfield_safe(ap,'Cldr',0)*dr );
+
+    Cm = ap.c*( getfield_safe(ap,'Cm0',0) + ap.Cmalpha*alpha ...
+        + ap.Cmq*q*ap.c/(2*V) + getfield_safe(ap,'Cmde',0)*de );
+
+    Cn = ap.b*( getfield_safe(ap,'Cn0',0) + ap.Cnbeta*beta ...
+        + ap.Cnp*p*ap.b/(2*V) + ap.Cnr*r*ap.b/(2*V) ...
+        + getfield_safe(ap,'Cnda',0)*da + getfield_safe(ap,'Cndr',0)*dr );
+
+    aero_moments = Q*ap.S*[Cl; Cm; Cn];
+end
+
+function val = getfield_safe(s, f, default)
+    if isfield(s,f), val = s.(f); else, val = default; end
+end
+
+function [V, beta, alpha] = wind_angles_from_body_velocity(vb)
+    u = vb(1); v = vb(2); w = vb(3);
+    V = sqrt(max(u*u + v*v + w*w, eps));
+    beta  = asin( max(-1,min(1, v / V )) );
+    alpha = atan2(w, u);   % robust for u≈0
+end
+
+function rho = local_density(h, ap)
+    % h = altitude above MSL (m), positive up.
+    try
+        [~,~,~,rho] = stdatmo(max(h,0));
+    catch
+        % ISA to ~11 km
+        rho0 = ap.rho0; T0=288.15; L=0.0065; R=287.058; g0=9.80665;
+        T = T0 - L*max(h,0);
+        rho = rho0*(T/T0)^(g0/(R*L)-1);
+    end
+end
+
+function R = Rx(a)
+    ca = cos(a); sa = sin(a);
+    R = [1 0 0; 0 ca -sa; 0 sa ca];
+end
+
+function R = Ry(a)
+    ca = cos(a); sa = sin(a);
+    R = [ca 0 sa; 0 1 0; -sa 0 ca];
+end
+
+function R = Rz(a)
+    ca = cos(a); sa = sin(a);
+    R = [ca -sa 0; sa ca 0; 0 0 1];
+end
+
+function PlotAircraftSim_Lab5(time, X, U, fig, col)
+    % Lab 5-compliant plotting (surfaces in deg, throttle 0–1)
+    t = time(:); n = numel(t);
+    if size(X,2) ~= n, X = X.'; end
+    if size(U,2) ~= n, U = U.'; end
+
+    de_deg = rad2deg(U(1,:));
+    da_deg = rad2deg(U(2,:));
+    dr_deg = rad2deg(U(3,:));
+    dt     = max(0, min(1, U(4,:)));
+
+    % Figure 1 – Inertial Position
+    figure(fig(1));
+    subplot(3,1,1); hold on; plot(t, X(1,:), col); ylabel('x (m)'); grid on;
+    subplot(3,1,2); hold on; plot(t, X(2,:), col); ylabel('y (m)'); grid on;
+    subplot(3,1,3); hold on; plot(t, X(3,:), col); ylabel('z (m)'); xlabel('Time (s)'); grid on;
+    sgtitle('Inertial Position (Fixed-Wing)');
+
+    % Figure 2 – Euler Angles
+    figure(fig(2));
+    subplot(3,1,1); hold on; plot(t, X(4,:), col); ylabel('\phi (rad)'); grid on;
+    subplot(3,1,2); hold on; plot(t, X(5,:), col); ylabel('\theta (rad)'); grid on;
+    subplot(3,1,3); hold on; plot(t, X(6,:), col); ylabel('\psi (rad)'); xlabel('Time (s)'); grid on;
+    sgtitle('Euler Angles (Fixed-Wing)');
+
+    % Figure 3 – Body-Frame Velocity
+    figure(fig(3));
+    subplot(3,1,1); hold on; plot(t, X(7,:), col); ylabel('u (m/s)'); grid on;
+    subplot(3,1,2); hold on; plot(t, X(8,:), col); ylabel('v (m/s)'); grid on;
+    subplot(3,1,3); hold on; plot(t, X(9,:), col); ylabel('w (m/s)'); xlabel('Time (s)'); grid on;
+    sgtitle('Body-Frame Velocity (Fixed-Wing)');
+
+    % Figure 4 – Angular Velocity
+    figure(fig(4));
+    subplot(3,1,1); hold on; plot(t, X(10,:), col); ylabel('p (rad/s)'); grid on;
+    subplot(3,1,2); hold on; plot(t, X(11,:), col); ylabel('q (rad/s)'); grid on;
+    subplot(3,1,3); hold on; plot(t, X(12,:), col); ylabel('r (rad/s)'); xlabel('Time (s)'); grid on;
+    sgtitle('Angular Velocity (Fixed-Wing)');
+
+    % Figure 5 – Control Inputs
+    figure(fig(5));
+    subplot(4,1,1); hold on; plot(t, de_deg, col); ylabel('\delta_e (deg)'); grid on;
+    subplot(4,1,2); hold on; plot(t, da_deg, col); ylabel('\delta_a (deg)'); grid on;
+    subplot(4,1,3); hold on; plot(t, dr_deg, col); ylabel('\delta_r (deg)'); grid on;
+    subplot(4,1,4); hold on; plot(t, dt,     col); ylabel('\delta_t (0–1)'); xlabel('Time (s)'); grid on;
+    sgtitle('Control Inputs: Surfaces in Degrees, Throttle as Fraction');
+
+    % Figure 6 – 3D Path
+    figure(fig(6)); hold on;
+    plot3(X(1,:), X(2,:), X(3,:), col, 'LineWidth', 1.2);
+    plot3(X(1,1), X(2,1), X(3,1), 'go', 'MarkerFaceColor','g');
+    plot3(X(1,end), X(2,end), X(3,end), 'ro', 'MarkerFaceColor','r');
+    grid on; axis vis3d; xlabel('x (m)'); ylabel('y (m)'); zlabel('z (m)'); view(3);
+    title('3D Aircraft Path (Fixed-Wing)');
+end
