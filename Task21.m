@@ -25,7 +25,7 @@ opts = odeset('RelTol',1e-6, 'AbsTol',1e-8);
 % Plot 
 figs = 1:6;
 Uplot = repmat(u_const, 1, numel(t));
-PlotAircraftSim_Lab5(t, x.', Uplot, figs, 'b-');
+PlotAircraftSim(t, x.', Uplot, figs, 'b-');
 
 %% Local functions 
 
@@ -265,60 +265,3 @@ function R = Rz(a)
     ca = cos(a); sa = sin(a);
     R = [ca -sa 0; sa ca 0; 0 0 1];
 end
-
-function PlotAircraftSim_Lab5(time, X, U, fig, col)
-    % Lab 5-compliant plotting (surfaces in deg, throttle 0–1)
-    t = time(:); n = numel(t);
-    if size(X,2) ~= n, X = X.'; end
-    if size(U,2) ~= n, U = U.'; end
-
-    de_deg = rad2deg(U(1,:));
-    da_deg = rad2deg(U(2,:));
-    dr_deg = rad2deg(U(3,:));
-    dt     = max(0, min(1, U(4,:)));
-
-    % Figure 1 – Inertial Position
-    figure(fig(1));
-    subplot(3,1,1); hold on; plot(t, X(1,:), col); ylabel('x (m)'); grid on;
-    subplot(3,1,2); hold on; plot(t, X(2,:), col); ylabel('y (m)'); grid on;
-    subplot(3,1,3); hold on; plot(t, X(3,:), col); ylabel('z (m)'); xlabel('Time (s)'); grid on;
-    sgtitle('Inertial Position (Fixed-Wing)');
-
-    % Figure 2 – Euler Angles
-    figure(fig(2));
-    subplot(3,1,1); hold on; plot(t, X(4,:), col); ylabel('\phi (rad)'); grid on;
-    subplot(3,1,2); hold on; plot(t, X(5,:), col); ylabel('\theta (rad)'); grid on;
-    subplot(3,1,3); hold on; plot(t, X(6,:), col); ylabel('\psi (rad)'); xlabel('Time (s)'); grid on;
-    sgtitle('Euler Angles (Fixed-Wing)');
-
-    % Figure 3 – Body-Frame Velocity
-    figure(fig(3));
-    subplot(3,1,1); hold on; plot(t, X(7,:), col); ylabel('u (m/s)'); grid on;
-    subplot(3,1,2); hold on; plot(t, X(8,:), col); ylabel('v (m/s)'); grid on;
-    subplot(3,1,3); hold on; plot(t, X(9,:), col); ylabel('w (m/s)'); xlabel('Time (s)'); grid on;
-    sgtitle('Body-Frame Velocity (Fixed-Wing)');
-
-    % Figure 4 – Angular Velocity
-    figure(fig(4));
-    subplot(3,1,1); hold on; plot(t, X(10,:), col); ylabel('p (rad/s)'); grid on;
-    subplot(3,1,2); hold on; plot(t, X(11,:), col); ylabel('q (rad/s)'); grid on;
-    subplot(3,1,3); hold on; plot(t, X(12,:), col); ylabel('r (rad/s)'); xlabel('Time (s)'); grid on;
-    sgtitle('Angular Velocity (Fixed-Wing)');
-
-    % Figure 5 – Control Inputs
-    figure(fig(5));
-    subplot(4,1,1); hold on; plot(t, de_deg, col); ylabel('\delta_e (deg)'); grid on;
-    subplot(4,1,2); hold on; plot(t, da_deg, col); ylabel('\delta_a (deg)'); grid on;
-    subplot(4,1,3); hold on; plot(t, dr_deg, col); ylabel('\delta_r (deg)'); grid on;
-    subplot(4,1,4); hold on; plot(t, dt,     col); ylabel('\delta_t (0–1)'); xlabel('Time (s)'); grid on;
-    sgtitle('Control Inputs: Surfaces in Degrees, Throttle as Fraction');
-
-    % Figure 6 – 3D Path
-    figure(fig(6)); hold on;
-    plot3(X(1,:), X(2,:), X(3,:), col, 'LineWidth', 1.2);
-    plot3(X(1,1), X(2,1), X(3,1), 'go', 'MarkerFaceColor','g');
-    plot3(X(1,end), X(2,end), X(3,end), 'ro', 'MarkerFaceColor','r');
-    grid on; axis vis3d; xlabel('x (m)'); ylabel('y (m)'); zlabel('z (m)'); view(3);
-    title('3D Aircraft Path (Fixed-Wing)');
-end
-
