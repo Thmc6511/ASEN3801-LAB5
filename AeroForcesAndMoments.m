@@ -41,7 +41,7 @@ CY = ap.CY0 + ap.CYbeta*beta + ap.CYp*p*ap.b/(2*V) + ap.CYr*r*ap.b/(2*V) + ap.CY
 %%Thrust = .5*density*ap.Sprop*ap.Cprop*((ap.kmotor*dt)^2 - V^2);
 Thrust = density*ap.Sprop*ap.Cprop*(V + dt*(ap.kmotor - V))*dt*(ap.kmotor-V); %
 %Changed 5/2/15;New model as described in http://uavbook.byu.edu/lib/exe/fetch.php?
-media=shared:propeller_model.pdf
+%media=shared:propeller_model.pdf
 %%% determine aero forces from coeffficients
 X = Q*ap.S*CX + Thrust;
 Y = Q*ap.S*CY;

@@ -1,4 +1,4 @@
-function UpdatedAircraftSim(time, aircraft_state_array, control_input_array, fig, col)
+function PlotAircraftSim(time, aircraft_state_array, control_input_array, fig, col)
 % PlotAircraftSim — Lab 5 version
 % - Control inputs: δe, δa, δr plotted in degrees; δt in [0–1] fraction.
 % - Keeps your existing figure layout and colors.
@@ -15,9 +15,11 @@ if size(control_input_array,2) ~= n
 end
 
 % Expecting controls as [δe; δa; δr; δt] with surfaces in radians.
+
 de_deg = rad2deg(control_input_array(1,:));
 da_deg = rad2deg(control_input_array(2,:));
 dr_deg = rad2deg(control_input_array(3,:));
+
 dt = control_input_array(4,:);
 
 %dt = max(0, min(1, dt));
@@ -31,9 +33,9 @@ sgtitle('Inertial Position (Fixed-Wing)');
 
 %% Figure 2 – Euler Angles
 figure(fig(2));
-subplot(3,1,1); hold on; plot(t, aircraft_state_array(4,:), col); ylabel('\phi (rad)'); grid on;
-subplot(3,1,2); hold on; plot(t, aircraft_state_array(5,:), col); ylabel('\theta (rad)'); grid on;
-subplot(3,1,3); hold on; plot(t, aircraft_state_array(6,:), col); ylabel('\psi (rad)'); xlabel('Time (s)'); grid on;
+subplot(3,1,1); hold on; plot(t, rad2deg(aircraft_state_array(4,:)), col); ylabel('\phi (deg)'); grid on;
+subplot(3,1,2); hold on; plot(t, rad2deg(aircraft_state_array(5,:)), col); ylabel('\theta (deg)'); grid on;
+subplot(3,1,3); hold on; plot(t, rad2deg(aircraft_state_array(6,:)), col); ylabel('\psi (deg)'); xlabel('Time (s)'); grid on;
 sgtitle('Euler Angles (Fixed-Wing)');
 
 %% Figure 3 – Body-Frame Velocity
@@ -45,9 +47,9 @@ sgtitle('Body-Frame Velocity (Fixed-Wing)');
 
 %% Figure 4 – Angular Velocity
 figure(fig(4));
-subplot(3,1,1); hold on; plot(t, aircraft_state_array(10,:), col); ylabel('p (rad/s)'); grid on;
-subplot(3,1,2); hold on; plot(t, aircraft_state_array(11,:), col); ylabel('q (rad/s)'); grid on;
-subplot(3,1,3); hold on; plot(t, aircraft_state_array(12,:), col); ylabel('r (rad/s)'); xlabel('Time (s)'); grid on;
+subplot(3,1,1); hold on; plot(t, rad2deg(aircraft_state_array(10,:)), col); ylabel('p (deg/s)'); grid on;
+subplot(3,1,2); hold on; plot(t, rad2deg(aircraft_state_array(11,:)), col); ylabel('q (deg/s)'); grid on;
+subplot(3,1,3); hold on; plot(t, rad2deg(aircraft_state_array(12,:)), col); ylabel('r (deg/s)'); xlabel('Time (s)'); grid on;
 sgtitle('Angular Velocity (Fixed-Wing)');
 
 %% Figure 5 – Control Inputs (per Lab 5)
