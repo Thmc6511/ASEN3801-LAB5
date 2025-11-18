@@ -27,6 +27,9 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function aircraft_parameters = ttwistor()
+
 aircraft_parameters.g = 9.81; % Gravitational acceleration [m/s^2]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Aircraft geometry parameters
@@ -126,3 +129,5 @@ aircraft_parameters.Cnda = -0.000078;
 aircraft_parameters.CYdr = 0.003056;
 aircraft_parameters.Cldr = 0.000157;
 aircraft_parameters.Cndr = -0.000856;
+
+end
