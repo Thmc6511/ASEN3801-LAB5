@@ -10,14 +10,14 @@ ap = load_ttwistor_or_fallback();
 % Initial state
 x0 = zeros(12,1);
 x0(7) = 21.0;% u (m/s)
-x0(3) = 1609.34;% altitude (m), positive up
+x0(3) = -1609.34;% altitude (m), positive up
 
 % Constant controls 
-u_const = [0; 0; 0; 0.50];% surfaces in rad, throttle in [0–1]
+u_const = [0; 0; 0; 0];% surfaces in rad, throttle in [0–1]
 wind_i = [0; 0; 0];% inertial wind (m/s), still air
 
 % Integrate dynamics 
-tspan = [0 20];
+tspan = [0 200];
 odefun = @(t,x) AircraftEOM_local(t, x, u_const, wind_i, ap);
 opts = odeset('RelTol',1e-6, 'AbsTol',1e-8);
 [t, x] = ode45(odefun, tspan, x0, opts);

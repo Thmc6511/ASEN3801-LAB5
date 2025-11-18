@@ -12,7 +12,7 @@ x0 = ...
     [0,0,-1800 %m
     0, 0.02780, 0 %rad
     20.99, 0, 0.5837 %m/s
-    0, 0 0 %rad/s
+    0, 0, 0 %rad/s
     ]';
 u0 = [0.1079, 0, 0, 0.3182]'; %rad
 
@@ -24,7 +24,7 @@ wind_i = [0; 0; 0];% inertial wind (m/s), still air
 
 % Integrate dynamics 
 tspan = [0 200];
-odefun = @(t,x) AircraftEOM_local(t, x0, u0, wind_i, ap);
+odefun = @(t,x) AircraftEOM_local(t, x, u0, wind_i, ap);
 opts = odeset('RelTol',1e-6, 'AbsTol',1e-8);
 [t, x] = ode45(odefun, tspan, x0, opts);
 
