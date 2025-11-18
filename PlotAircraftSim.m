@@ -70,5 +70,4 @@ grid on; axis vis3d;
 xlabel('x (m)'); ylabel('y (m)'); zlabel('Altitude (m)');
 view(3);
 title('3D Aircraft Path (Fixed-Wing)');
-
 end
