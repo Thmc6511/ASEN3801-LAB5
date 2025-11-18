@@ -63,9 +63,12 @@ sgtitle('Control Inputs: Surfaces in Degrees, Throttle as Fraction');
 %% Figure 6 – 3D Path
 figure(fig(6));
 hold on;
-plot3(aircraft_state_array(1,:), aircraft_state_array(2,:), aircraft_state_array(3,:), col, 'LineWidth', 1.2);
-plot3(aircraft_state_array(1,1), aircraft_state_array(2,1), aircraft_state_array(3,1), 'go', 'MarkerFaceColor','g');
-plot3(aircraft_state_array(1,end), aircraft_state_array(2,end), aircraft_state_array(3,end), 'ro', 'MarkerFaceColor','r');
-grid on; axis vis3d; xlabel('x (m)'); ylabel('y (m)'); zlabel('z (m)'); view(3);
+plot3(aircraft_state_array(1,:), aircraft_state_array(2,:), -aircraft_state_array(3,:), col, 'LineWidth', 1.2);
+plot3(aircraft_state_array(1,1), aircraft_state_array(2,1), -aircraft_state_array(3,1), 'go', 'MarkerFaceColor','g');
+plot3(aircraft_state_array(1,end), aircraft_state_array(2,end), -aircraft_state_array(3,end), 'ro', 'MarkerFaceColor','r');
+grid on; axis vis3d;
+xlabel('x (m)'); ylabel('y (m)'); zlabel('Altitude (m)');
+view(3);
 title('3D Aircraft Path (Fixed-Wing)');
+
 end
