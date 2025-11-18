@@ -1,0 +1,44 @@
+function [Fc, Gc] = VelocityReferenceFeedback(t,var)
+x_e = var(1);
+y_e = var(2);
+z_e = var(3);
+phi = var(4);
+theta = var(5);
+psi = var(6);
+u_e = var(7);
+v_e = var(8);
+w_e = var(9);
+p = var(10);
+q = var(11);
+r = var(12);
+g = 9.81;
+m = 0.068;
+Zc = m*g;
+Ix = 5.800000000000000e-05;
+Iy = 7.200000000000000e-05;
+lambda1 = -0.5;
+lambda2 = -0.05;
+k3 = 5;
+a0 = -(lambda1+lambda2);
+a1 = lambda1*lambda2;
+if t <= 2
+    umax = pi/2;   % 1.57 m/s
+    u_ref = umax * sin(pi*t/2);
+    v_ref = umax * sin(pi*t/2);
+else
+    u_ref = 0;
+    v_ref = 0;
+end
+phi_ref   = -k3 * (v_e - v_ref);
+theta_ref =  k3 * (u_e - u_ref);
+kp = a1*Ix;
+kphi = a0*Ix;
+kq = a1*Iy;
+ktheta = a0*Iy;
+kr = 0.004;
+Lc = (-kphi*(phi-phi_ref))-(kp*p);
+Mc = (-ktheta*(theta-theta_ref))-(kq*q);
+Nc = -kr*r;
+Fc = [0 0 Zc];
+Gc = [Lc Mc Nc];
+end
