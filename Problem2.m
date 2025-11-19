@@ -7,22 +7,19 @@ ap = aircraft_parameters;
 
 tspan = [0 200]; % time span for ode45
 %% Problem 2.1
-
+%{
 % Define variables
 x0 = zeros(12,1); % aircraft state
 x0(3) = -1609.34;% altitude (m)
 x0(7) = 21.0;% u (m/s)
 u = [0; 0; 0; 0];% control surface deflections in rad
 wind = [0; 0; 0];% inertial wind (m/s)
-
+%}
 
 %% Problem 2.2
-%{
 x0 = [0; 0; -1800; 0; 0.02780; 0; 20.99; 0; -0.5837; 0; 0; 0];
 u = [0.1079; 0; 0; 0.3182];
 wind = [0; 0; 0];
-%}
-
 
 %% Problem 2.3
 %{
