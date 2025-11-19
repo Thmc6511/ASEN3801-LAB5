@@ -28,7 +28,7 @@ dt = control_input_array(4,:);
 figure(fig(1));
 subplot(3,1,1); hold on; plot(t, aircraft_state_array(1,:), col); ylabel('x (m)'); grid on;
 subplot(3,1,2); hold on; plot(t, aircraft_state_array(2,:), col); ylabel('y (m)'); grid on;
-subplot(3,1,3); hold on; plot(t, aircraft_state_array(3,:), col); ylabel('z (m)'); xlabel('Time (s)'); grid on;
+subplot(3,1,3); hold on; plot(t, -aircraft_state_array(3,:), col); ylabel('z (m)'); xlabel('Time (s)'); grid on;
 sgtitle('Inertial Position (Fixed-Wing)');
 
 %% Figure 2 – Euler Angles
