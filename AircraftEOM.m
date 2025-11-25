@@ -15,7 +15,7 @@ p     = aircraft_state(10);
 q     = aircraft_state(11);
 r     = aircraft_state(12);
 
-rho = 1.06;
+[~, ~, ~, rho] = atmosisa(-zi); %Negative to account for us putting negative values into initial call
 
 [aero_forces, aero_moments] = AeroForcesAndMoments(aircraft_state, ...
                                                    aircraft_surfaces, ...
@@ -58,7 +58,7 @@ rdot = Gamma7*p*q - Gamma1*q*r + Gamma4*L + Gamma8*N;
 
 phi_dot   = p + q*sin(phi)*tan(theta) + r*cos(phi)*tan(theta);
 theta_dot = q*cos(phi) - r*sin(phi);
-psi_dot   = q*sin(phi)/cos(theta) + r*cos(phi)/cos(theta);
+psi_dot   = q*sin(phi)*sec(theta) + r*cos(phi)*sec(theta);
 
 cphi = cos(phi);   sphi = sin(phi);
 cth  = cos(theta); sth  = sin(theta);
