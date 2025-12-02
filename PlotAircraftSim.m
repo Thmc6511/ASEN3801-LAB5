@@ -1,12 +1,9 @@
 function PlotAircraftSim(time, aircraft_state_array, control_input_array, fig, col)
-% PlotAircraftSim — Lab 5 version
-% - Control inputs: δe, δa, δr plotted in degrees; δt in [0–1] fraction.
-% - Keeps your existing figure layout and colors.
+% PlotAircraftSim — Lab 5
 
 t = time(:);
 n = numel(t);
 
-% Ensure arrays are [state_or_input x time]
 if size(aircraft_state_array,2) ~= n
     aircraft_state_array = aircraft_state_array.';
 end
@@ -14,15 +11,12 @@ if size(control_input_array,2) ~= n
     control_input_array = control_input_array.';
 end
 
-% Expecting controls as [δe; δa; δr; δt] with surfaces in radians.
 
 de_deg = rad2deg(control_input_array(1,:));
 da_deg = rad2deg(control_input_array(2,:));
 dr_deg = rad2deg(control_input_array(3,:));
 
 dt = control_input_array(4,:);
-
-%dt = max(0, min(1, dt));
 
 %% Figure 1 – Inertial Position
 figure(fig(1));
